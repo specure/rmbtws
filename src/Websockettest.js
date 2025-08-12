@@ -20,6 +20,8 @@
  *****************************************************************************!*/
 "use strict";
 
+import { GeoTracker } from "./geolocation";
+
 /**
  * RMBTTest main object
  * @param {RMBTTestConfig} rmbtTestConfig
@@ -190,6 +192,8 @@ export function RMBTTest(rmbtTestConfig, rmbtControlServer) {
                         //only one thread will call after upload is finished
                         conductTest(response, thread, function () {
                             _logger.info("All tests finished");
+                            wsGeoTracker.stop();
+                            _rmbtTestResult.geoLocations = wsGeoTracker.getResults();
                             _rmbtTestResult.calculateAll();
                             _rmbtControlServer.submitResults(
                                 prepareResult(response),
@@ -217,7 +221,12 @@ export function RMBTTest(rmbtTestConfig, rmbtControlServer) {
                 }
             };
 
-            continuation();
+            //get the user's geolocation
+            let wsGeoTracker = new GeoTracker();
+            _logger.debug("getting geolocation");
+            wsGeoTracker.start(function() {
+                continuation();
+            }, TestEnvironment.getTestVisualization());
         }, () => {
             //no internet connection
             callErrorCallback(RMBTError.REGISTRATION_FAILED);
