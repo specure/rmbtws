@@ -20,8 +20,6 @@
  *****************************************************************************!*/
 "use strict";
 
-import { GeoTracker } from "./geolocation";
-
 /**
  * RMBTTest main object
  * @param {RMBTTestConfig} rmbtTestConfig

@@ -20,6 +20,13 @@
  *****************************************************************************!*/
 "use strict";
 
+/**
+ * RMBTTest main object
+ * @param {RMBTTestConfig} rmbtTestConfig
+ * @param {RMBTControlServerCommunication} rmbtControlServer
+ * @returns {}
+ */
+
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
@@ -28,16 +35,7 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 exports.RMBTTest = RMBTTest;
 
-var _geolocation = require("./geolocation");
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-/**
- * RMBTTest main object
- * @param {RMBTTestConfig} rmbtTestConfig
- * @param {RMBTControlServerCommunication} rmbtControlServer
- * @returns {}
- */
 
 var MockLogger = function () {
     function MockLogger() {
@@ -240,7 +238,7 @@ function RMBTTest(rmbtTestConfig, rmbtControlServer) {
             };
 
             //get the user's geolocation
-            var wsGeoTracker = new _geolocation.GeoTracker();
+            var wsGeoTracker = new GeoTracker();
             _logger.debug("getting geolocation");
             wsGeoTracker.start(function () {
                 continuation();
