@@ -1,7 +1,7 @@
 /*!******************************************************************************
  * @license
  * Copyright 2015-2017 Thomas Schreiber
- * Copyright 2017-2019 Rundfunk und Telekom Regulierungs-GmbH (RTR-GmbH)
+ * Copyright 2017-2019      Rundfunk und Telekom Regulierungs-GmbH (RTR-GmbH)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,9 +36,35 @@ function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) 
 function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
 function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
 function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _classCallCheck(a, n) { if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function"); }
+function _defineProperties(e, r) { for (var t = 0; t < r.length; t++) { var o = r[t]; o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, _toPropertyKey(o.key), o); } }
+function _createClass(e, r, t) { return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", { writable: !1 }), e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+var MockLogger = /*#__PURE__*/function () {
+  function MockLogger() {
+    _classCallCheck(this, MockLogger);
+  }
+  return _createClass(MockLogger, [{
+    key: "debug",
+    value: function debug() {}
+  }, {
+    key: "error",
+    value: function error() {}
+  }, {
+    key: "info",
+    value: function info() {}
+  }, {
+    key: "warn",
+    value: function warn() {}
+  }, {
+    key: "log",
+    value: function log() {}
+  }]);
+}();
 function RMBTTest(rmbtTestConfig, rmbtControlServer) {
-  var _server_override = "wss://developv4-rmbtws.netztest.at:19002";
-  var _logger = log.getLogger("rmbtws");
+  var _logger = log && log.getLogger ? log.getLogger("rmbtws") : console;
   var _chunkSize = null;
   var MAX_CHUNK_SIZE = 4194304;
   var MIN_CHUNK_SIZE = 0;
@@ -126,6 +152,7 @@ function RMBTTest(rmbtTestConfig, rmbtControlServer) {
    */
   var callErrorCallback = function callErrorCallback(error) {
     _logger.debug("error occurred during websocket test:", error);
+    _intermediateResult.error = error;
     if (error !== RMBTError.NOT_SUPPORTED) {
       setState(TestState.ERROR);
     }
@@ -135,7 +162,7 @@ function RMBTTest(rmbtTestConfig, rmbtControlServer) {
       t(error);
     }
   };
-  this.startTest = function () {
+  this.startTest = function (isLoopIteration) {
     //see if websockets are supported
     if (globalThis.WebSocket === undefined) {
       callErrorCallback(RMBTError.NOT_SUPPORTED);
@@ -146,6 +173,9 @@ function RMBTTest(rmbtTestConfig, rmbtControlServer) {
     //connect to control server
     _rmbtControlServer.getDataCollectorInfo();
     _rmbtControlServer.obtainControlServerRegistration(function (response) {
+      if (!isLoopIteration) {
+        window.loopFirstTestUUID = response.test_uuid;
+      }
       _numThreadsAllowed = parseInt(response.test_numthreads);
       _cyclicBarrier = new CyclicBarrier(_numThreadsAllowed);
       _statesInfo.durationDownMs = response.test_duration * 1e3;
@@ -198,20 +228,13 @@ function RMBTTest(rmbtTestConfig, rmbtControlServer) {
           }, response.test_wait * 1e3);
         }
       };
-      var wsGeoTracker;
-      //get the user's geolocation
-      if (TestEnvironment.getGeoTracker() !== null) {
-        wsGeoTracker = TestEnvironment.getGeoTracker();
 
-        //in case of legacy code, the geoTracker will already be started
+      //get the user's geolocation
+      var wsGeoTracker = new GeoTracker();
+      _logger.debug("getting geolocation");
+      wsGeoTracker.start(function () {
         continuation();
-      } else {
-        wsGeoTracker = new GeoTracker();
-        _logger.debug("getting geolocation");
-        wsGeoTracker.start(function () {
-          continuation();
-        }, TestEnvironment.getTestVisualization());
-      }
+      }, TestEnvironment.getTestVisualization());
     }, function () {
       //no internet connection
       callErrorCallback(RMBTError.REGISTRATION_FAILED);
@@ -225,6 +248,7 @@ function RMBTTest(rmbtTestConfig, rmbtControlServer) {
   this.getIntermediateResult = function () {
     _intermediateResult.status = _state;
     var diffTime = nowNs() / 1e6 - _stateChangeMs;
+    _intermediateResult.diffTime = diffTime / 1000;
     switch (_intermediateResult.status) {
       case TestState.WAIT:
         _intermediateResult.progress = 0;
@@ -289,7 +313,6 @@ function RMBTTest(rmbtTestConfig, rmbtControlServer) {
    */
   function conductTest(registrationResponse, thread, callback) {
     var server = (registrationResponse.test_server_encryption ? "wss://" : "ws://") + registrationResponse.test_server_address + ":" + registrationResponse.test_server_port;
-    //server = server_override;
     _logger.debug(server);
     var errorFunctions = function () {
       return {
@@ -300,7 +323,11 @@ function RMBTTest(rmbtTestConfig, rmbtControlServer) {
           if (e) {
             _logger.error("connection closed", e);
           }
-          callErrorCallback(RMBTError.CONNECT_FAILED);
+          if (e.code === 1006) {
+            callErrorCallback(RMBTError.ABNORMALLY_CLOSED);
+          } else {
+            callErrorCallback(RMBTError.CONNECT_FAILED);
+          }
         },
         TRYRECONNECT: function TRYRECONNECT() {
           //@TODO: try to reconnect
@@ -360,7 +387,6 @@ function RMBTTest(rmbtTestConfig, rmbtControlServer) {
       connectToServer(thread, server, registrationResponse.test_token, errorFunctions.CALLGLOBALHANDLER);
     });
     thread.onStateEnter(TestState.INIT_UP, function () {
-      //setState(TestState.INIT_UP);
       _chunkSize = MIN_CHUNK_SIZE;
       shortUploadtest(thread, _rmbtTestConfig.pretestDurationMs);
     });
@@ -424,7 +450,9 @@ function RMBTTest(rmbtTestConfig, rmbtControlServer) {
     }
     thread.socket.binaryType = "arraybuffer";
     thread.socket.onerror = errorHandler;
-    thread.socket.onclose = errorHandler;
+    thread.socket.onclose = function () {
+      thread.triggerNextState();
+    };
     thread.socket.onmessage = function (event) {
       //logger.debug("thread " + thread.id + " triggered, state " + thread.state + " event: " + event);
 
@@ -1022,7 +1050,8 @@ function RMBTTest(rmbtTestConfig, rmbtControlServer) {
       type: "DESKTOP",
       version_code: "1",
       speed_detail: _rmbtTestResult.speedItems,
-      user_server_selection: _rmbtTestConfig.userServerSelection
+      user_server_selection: _rmbtTestConfig.userServerSelection,
+      loop_uuid: window.loopFirstTestUUID
     };
   }
 
@@ -1277,21 +1306,20 @@ if (typeof globalThis.setCookie === 'undefined' && globalThis.document) {
 }
 "use strict";
 
+/**
+ * Handles the communication with the ControlServer
+ * @param rmbtTestConfig RMBT Test Configuratio
+ * @param headers HTTP headers to send in the requests
+ * @param testServerConfig Measurement server info
+ * @returns Object
+ */
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.RMBTControlServerCommunication = void 0;
-/**
- * Handles the communication with the ControlServer
- * @param rmbtTestConfig RMBT Test Configuratio
- * @param options additional options:
- *  'register': Function to be called after registration: function(event)
- *  'submit':  Function to be called after result submission: function(event)
- * @returns Object
- */
-var RMBTControlServerCommunication = exports.RMBTControlServerCommunication = function RMBTControlServerCommunication(rmbtTestConfig, options) {
+var RMBTControlServerCommunication = exports.RMBTControlServerCommunication = function RMBTControlServerCommunication(rmbtTestConfig, options, testServerConfig) {
   var _rmbtTestConfig = rmbtTestConfig;
-  var _logger = log.getLogger("rmbtws");
+  var _logger = log && log.getLogger ? log.getLogger("rmbtws") : new MockLogger();
   options = options || {};
   var _registrationCallback = options.register || null;
   var _submissionCallback = options.submit || null;
@@ -1312,7 +1340,8 @@ var RMBTControlServerCommunication = exports.RMBTControlServerCommunication = fu
         version_code: _rmbtTestConfig.version_code,
         client: _rmbtTestConfig.client,
         timezone: _rmbtTestConfig.timezone,
-        time: new Date().getTime()
+        time: new Date().getTime(),
+        measurement_server_id: testServerConfig ? testServerConfig.id : undefined
       };
 
       //add additional parameters from the configuration, if any
@@ -1408,7 +1437,6 @@ Object.defineProperty(exports, "__esModule", {
 exports.TestEnvironment = void 0;
 var TestEnvironment = exports.TestEnvironment = function () {
   var testVisualization = null;
-  var geoTracker = null;
   return {
     /**
      * gets the TestVisualization or null
@@ -1417,22 +1445,11 @@ var TestEnvironment = exports.TestEnvironment = function () {
     getTestVisualization: function getTestVisualization() {
       return testVisualization;
     },
-    /**
-     * gets the GeoTracker or null
-     * @returns {GeoTracker}
-     */
-    getGeoTracker: function getGeoTracker() {
-      return geoTracker;
-    },
-    init: function init(tVisualization, gTracker) {
+    init: function init(tVisualization) {
       if (typeof tVisualization === 'undefined') {
         tVisualization = new TestVisualization();
       }
-      if (typeof gTracker === 'undefined') {
-        gTracker = new GeoTracker();
-      }
       testVisualization = tVisualization;
-      geoTracker = gTracker;
     }
   };
 }();
@@ -1531,13 +1548,6 @@ var TestVisualization = function () {
   };
 
   /**
-   * Will be called from GeoTracker as soon as a location is available
-   * @param latitude
-   * @param longitude
-   */
-  TestVisualization.prototype.setLocation = function (latitude, longitude) {};
-
-  /**
    * Starts visualization
    */
   TestVisualization.prototype.startTest = function () {};
@@ -1548,7 +1558,8 @@ var TestVisualization = function () {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.RMBTTestConfig = void 0;
+exports.RMBTTestConfig = exports.RMBTError = void 0;
+exports.RMBTTestResult = RMBTTestResult;
 var RMBTTestConfig = exports.RMBTTestConfig = function () {
   RMBTTestConfig.prototype.version = "0.3"; //minimal version compatible with the test
   RMBTTestConfig.prototype.language;
@@ -1564,26 +1575,25 @@ var RMBTTestConfig = exports.RMBTTestConfig = function () {
   RMBTTestConfig.prototype.client = "RMBTws";
   RMBTTestConfig.prototype.timezone = "Europe/Vienna";
   RMBTTestConfig.prototype.controlServerURL;
-  RMBTTestConfig.prototype.controlServerRegistrationResource = "/testRequest";
-  RMBTTestConfig.prototype.controlServerResultResource = "/result";
-  RMBTTestConfig.prototype.controlServerDataCollectorResource = "/requestDataCollector";
+  RMBTTestConfig.prototype.controlServerRegistrationResource = "adminTestRequest";
+  RMBTTestConfig.prototype.controlServerResultResource = "measurementResult";
+  RMBTTestConfig.prototype.controlServerDataCollectorResource = "requestDataCollector";
   //?!? - from RMBTTestParameter.java
   RMBTTestConfig.prototype.pretestDurationMs = 2000;
   RMBTTestConfig.prototype.savedChunks = 4; //4*4 + 4*8 + 4*16 + ... + 4*MAX_CHUNK_SIZE -> O(8*MAX_CHUNK_SIZE)
   RMBTTestConfig.prototype.measurementPointsTimespan = 40; //1 measure point every 40 ms
   RMBTTestConfig.prototype.numPings = 10; //do 10 pings
-  RMBTTestConfig.prototype.doPingIntervalMilliseconds = -1; //if enabled, ping tests will be conducted until the time limit is reached (min numPings)
   //max used threads for this test phase (upper limit: RegistrationResponse)
   RMBTTestConfig.prototype.downloadThreadsLimitsMbit = {
     0: 1,
     1: 3,
-    100: 5
+    100: 10
   };
   RMBTTestConfig.prototype.uploadThreadsLimitsMbit = {
     0: 1,
     30: 2,
     80: 3,
-    150: 5
+    150: 10
   };
   RMBTTestConfig.prototype.userServerSelection = typeof globalThis.userServerSelection !== 'undefined' ? userServerSelection : 0; //for QoSTest
   RMBTTestConfig.prototype.additionalRegistrationParameters = {}; //will be transmitted in ControlServer registration, if any
@@ -1592,10 +1602,6 @@ var RMBTTestConfig = exports.RMBTTestConfig = function () {
   function RMBTTestConfig(language, controlProxy, wsPath) {
     this.language = language;
     this.controlServerURL = controlProxy + "/" + wsPath;
-    if (typeof Intl !== 'undefined' && Intl.DateTimeFormat().resolvedOptions().timeZone) {
-      //we are based in Vienna :-)
-      this.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone.replace("Europe/Berlin", "Europe/Vienna");
-    }
   }
   return RMBTTestConfig;
 }();
@@ -1613,7 +1619,6 @@ var RMBTControlServerRegistrationResponse = function () {
   RMBTControlServerRegistrationResponse.prototype.result_url;
   RMBTControlServerRegistrationResponse.prototype.test_wait;
   RMBTControlServerRegistrationResponse.prototype.test_server_port;
-  //test
   function RMBTControlServerRegistrationResponse(data) {
     Object.assign(this, data);
     this.test_duration = parseInt(data.test_duration);
@@ -1627,7 +1632,7 @@ var RMBTControlServerRegistrationResponse = function () {
  * @returns {RMBTTestThread}
  */
 function RMBTTestThread(cyclicBarrier) {
-  var _logger = log.getLogger("rmbtws");
+  var _logger = log && log.getLogger ? log.getLogger("rmbtws") : new MockLogger();
   var _callbacks = {};
   var _cyclicBarrier = cyclicBarrier;
   return {
@@ -1849,12 +1854,13 @@ RMBTPingResult.prototype.timeNs = -1;
  * @callback RMBTControlServerRegistrationResponseCallback
  * @param {RMBTControlServerRegistrationResponse} json
  */
-var RMBTError = {
+var RMBTError = exports.RMBTError = {
   NOT_SUPPORTED: "WebSockets are not supported",
   SOCKET_INIT_FAILED: "WebSocket initialization failed",
   CONNECT_FAILED: "connection to test server failed",
   SUBMIT_FAILED: "Error during submission of test results",
-  REGISTRATION_FAILED: "Error during test registration"
+  REGISTRATION_FAILED: "Error during test registration",
+  ABNORMALLY_CLOSED: "Connection closed abnormally"
 };
 "use strict";
 
