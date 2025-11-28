@@ -32,7 +32,7 @@ var TestVisualization = function () {
      * @param providerName
      * @param testUUID
      */
-    TestVisualization.prototype.updateInfo = function (serverName, remoteIp, providerName, testUUID) {
+    TestVisualization.prototype.updateInfo = function (serverName, remoteIp, providerName, testUUID, openTestUUID) {
 
     };
 

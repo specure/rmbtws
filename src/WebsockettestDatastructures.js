@@ -7,7 +7,7 @@ export let RMBTTestConfig = (function () {
     RMBTTestConfig.prototype.type = "DESKTOP";
     RMBTTestConfig.prototype.version_code = "0.3"; //minimal version compatible with the test
     RMBTTestConfig.prototype.client_version = "0.3"; //filled out by version information from RMBTServer
-    RMBTTestConfig.prototype.client_software_version = "0.9.0";
+    RMBTTestConfig.prototype.client_software_version = "0.9.4";
     RMBTTestConfig.prototype.os_version = 1;
     RMBTTestConfig.prototype.platform = "RMBTws";
     RMBTTestConfig.prototype.model = "Websocket";
@@ -37,10 +37,7 @@ export let RMBTTestConfig = (function () {
         80: 3,
         150: 10,
     };
-    RMBTTestConfig.prototype.userServerSelection =
-        typeof window.userServerSelection !== "undefined"
-            ? userServerSelection
-            : 0; //for QoSTest
+    RMBTTestConfig.prototype.userServerSelection = ((typeof globalThis.userServerSelection !== 'undefined') ? userServerSelection : 0); //for QoSTest
     RMBTTestConfig.prototype.additionalRegistrationParameters = {}; //will be transmitted in ControlServer registration, if any
     RMBTTestConfig.prototype.additionalSubmissionParameters = {}; //will be transmitted in ControlServer result submission, if any
 
@@ -307,12 +304,20 @@ RMBTTestResult.prototype.calculateAll = function () {
 
     //ping
     let pings = this.threads[0].pings;
+    let pingsResult = [];
     for (let i = 0; i < pings.length; i++) {
-        this.pings.push({
-            value: pings[i].client,
-            value_server: pings[i].server,
-            time_ns: pings[i].timeNs,
+        pingsResult.push({
+           value: pings[i].client,
+           value_server: pings[i].server,
+           time_ns: pings[i].timeNs
         });
+    }
+    this.pings = pingsResult;
+
+    //add time_ns to geoLocations
+    for (let i=0;i<this.geoLocations.length;i++) {
+        let geoLocation = this.geoLocations[i];
+        geoLocation['time_ns'] = (geoLocation.tstamp - this.beginTime) * 1e6;
     }
 };
 
