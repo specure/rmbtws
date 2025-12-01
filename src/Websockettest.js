@@ -154,6 +154,7 @@ export function RMBTTest(rmbtTestConfig, rmbtControlServer) {
         _rmbtControlServer.getDataCollectorInfo();
 
         _rmbtControlServer.obtainControlServerRegistration(function (response) {
+            _logger.debug("got test configuration from control server", response);
             if (!isLoopIteration) {
                 window.loopFirstTestUUID = response.test_uuid;
             }
