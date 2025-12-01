@@ -1326,6 +1326,7 @@ var RMBTControlServerCommunication = exports.RMBTControlServerCommunication = fu
   var headers = options.headers || {
     'Content-Type': 'application/json'
   };
+  var useLocalServer = _rmbtTestConfig.additionalRegistrationParameters && _rmbtTestConfig.additionalRegistrationParameters.useLocalServer;
   return {
     /**
      *
@@ -1364,7 +1365,12 @@ var RMBTControlServerCommunication = exports.RMBTControlServerCommunication = fu
       })["catch"](function (reason) {
         response = reason;
         _logger.error("error getting testID");
-        onerror();
+        if (typeof useLocalServer === 'function') {
+          var config = new RMBTControlServerRegistrationResponse(useLocalServer());
+          onsuccess(config);
+        } else {
+          onerror();
+        }
       })["finally"](function () {
         if (_registrationCallback != null && typeof _registrationCallback === 'function') {
           _registrationCallback({
