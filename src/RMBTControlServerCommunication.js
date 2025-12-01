@@ -26,6 +26,14 @@ export const RMBTControlServerCommunication = (rmbtTestConfig, options, testServ
          * @param {RMBTControlServerRegistrationResponseCallback} onsuccess called on completion
          */
         obtainControlServerRegistration: (onsuccess, onerror) => {
+            if (local_server_settings) {
+                const config = new RMBTControlServerRegistrationResponse(
+                    local_server_settings
+                );
+                onsuccess(config);
+                return
+            }
+
             let json_data = {
                 version: _rmbtTestConfig.version,
                 language: _rmbtTestConfig.language,
@@ -63,14 +71,7 @@ export const RMBTControlServerCommunication = (rmbtTestConfig, options, testServ
                 response = reason;
                 _logger.error("error getting testID");
                 _logger.debug(`local_server_settings: ${local_server_settings}`);
-                if (local_server_settings) {
-                    const config = new RMBTControlServerRegistrationResponse(
-                        local_server_settings
-                    );
-                    onsuccess(config);
-                } else {
-                    onerror();
-                }
+                onerror();
             }).finally(() => {
                 if (_registrationCallback != null && typeof _registrationCallback === 'function') {
                     _registrationCallback({
@@ -86,6 +87,9 @@ export const RMBTControlServerCommunication = (rmbtTestConfig, options, testServ
          *
          */
         getDataCollectorInfo: () => {
+            if (local_server_settings) {
+                return;
+            }
             fetch(
                 _rmbtTestConfig.controlServerURL + _rmbtTestConfig.controlServerDataCollectorResource,
                 {
