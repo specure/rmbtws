@@ -1336,6 +1336,7 @@ var RMBTControlServerCommunication = exports.RMBTControlServerCommunication = fu
      */
     obtainControlServerRegistration: function obtainControlServerRegistration(onsuccess, onerror) {
       if (local_server_settings) {
+        _logger.debug("local_server_settings: ".concat(local_server_settings));
         var config = new RMBTControlServerRegistrationResponse(local_server_settings);
         onsuccess(config);
         return;
@@ -1372,7 +1373,6 @@ var RMBTControlServerCommunication = exports.RMBTControlServerCommunication = fu
       })["catch"](function (reason) {
         response = reason;
         _logger.error("error getting testID");
-        _logger.debug("local_server_settings: ".concat(local_server_settings));
         onerror();
       })["finally"](function () {
         if (_registrationCallback != null && typeof _registrationCallback === 'function') {
@@ -1389,6 +1389,7 @@ var RMBTControlServerCommunication = exports.RMBTControlServerCommunication = fu
      */
     getDataCollectorInfo: function getDataCollectorInfo() {
       if (local_server_settings) {
+        _logger.debug("local_server_settings: ".concat(local_server_settings));
         return;
       }
       fetch(_rmbtTestConfig.controlServerURL + _rmbtTestConfig.controlServerDataCollectorResource, {
@@ -1411,6 +1412,11 @@ var RMBTControlServerCommunication = exports.RMBTControlServerCommunication = fu
      * @param {Function} callback
      */
     submitResults: function submitResults(json_data, onsuccess, onerror) {
+      if (local_server_settings) {
+        _logger.debug("local_server_settings: ".concat(local_server_settings));
+        onsuccess(true);
+        return;
+      }
       //add additional parameters from the configuration, if any
       Object.assign(json_data, _rmbtTestConfig.additionalSubmissionParameters);
       var json = JSON.stringify(json_data);

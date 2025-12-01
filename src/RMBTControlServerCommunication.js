@@ -27,6 +27,7 @@ export const RMBTControlServerCommunication = (rmbtTestConfig, options, testServ
          */
         obtainControlServerRegistration: (onsuccess, onerror) => {
             if (local_server_settings) {
+                _logger.debug(`local_server_settings: ${local_server_settings}`);
                 const config = new RMBTControlServerRegistrationResponse(
                     local_server_settings
                 );
@@ -70,7 +71,6 @@ export const RMBTControlServerCommunication = (rmbtTestConfig, options, testServ
             }).catch(reason => {
                 response = reason;
                 _logger.error("error getting testID");
-                _logger.debug(`local_server_settings: ${local_server_settings}`);
                 onerror();
             }).finally(() => {
                 if (_registrationCallback != null && typeof _registrationCallback === 'function') {
@@ -88,6 +88,7 @@ export const RMBTControlServerCommunication = (rmbtTestConfig, options, testServ
          */
         getDataCollectorInfo: () => {
             if (local_server_settings) {
+                _logger.debug(`local_server_settings: ${local_server_settings}`);
                 return;
             }
             fetch(
@@ -113,6 +114,11 @@ export const RMBTControlServerCommunication = (rmbtTestConfig, options, testServ
          * @param {Function} callback
          */
         submitResults: (json_data, onsuccess, onerror) => {
+            if (local_server_settings) {
+                _logger.debug(`local_server_settings: ${local_server_settings}`);
+                onsuccess(true);
+                return;
+            }
             //add additional parameters from the configuration, if any
             Object.assign(json_data, _rmbtTestConfig.additionalSubmissionParameters);
 
