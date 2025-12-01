@@ -18,7 +18,7 @@ export const RMBTControlServerCommunication = (rmbtTestConfig, options, testServ
         'Content-Type': 'application/json'
     };
 
-    const useLocalServer = _rmbtTestConfig.additionalRegistrationParameters && _rmbtTestConfig.additionalRegistrationParameters.useLocalServer;
+    const local_server_settings = _rmbtTestConfig.additionalRegistrationParameters && _rmbtTestConfig.additionalRegistrationParameters.local_server_settings;
 
     return {
         /**
@@ -62,9 +62,10 @@ export const RMBTControlServerCommunication = (rmbtTestConfig, options, testServ
             }).catch(reason => {
                 response = reason;
                 _logger.error("error getting testID");
-                if (typeof useLocalServer === 'function') {
+                _logger.debug(`local_server_settings: ${local_server_settings}`);
+                if (local_server_settings) {
                     const config = new RMBTControlServerRegistrationResponse(
-                        useLocalServer()
+                        local_server_settings
                     );
                     onsuccess(config);
                 } else {

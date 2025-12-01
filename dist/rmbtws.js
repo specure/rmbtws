@@ -174,6 +174,7 @@ function RMBTTest(rmbtTestConfig, rmbtControlServer) {
     //connect to control server
     _rmbtControlServer.getDataCollectorInfo();
     _rmbtControlServer.obtainControlServerRegistration(function (response) {
+      _logger.debug("got test configuration from control server", response);
       if (!isLoopIteration) {
         window.loopFirstTestUUID = response.test_uuid;
       }
@@ -1327,7 +1328,7 @@ var RMBTControlServerCommunication = exports.RMBTControlServerCommunication = fu
   var headers = options.headers || {
     'Content-Type': 'application/json'
   };
-  var useLocalServer = _rmbtTestConfig.additionalRegistrationParameters && _rmbtTestConfig.additionalRegistrationParameters.useLocalServer;
+  var local_server_settings = _rmbtTestConfig.additionalRegistrationParameters && _rmbtTestConfig.additionalRegistrationParameters.local_server_settings;
   return {
     /**
      *
@@ -1366,8 +1367,9 @@ var RMBTControlServerCommunication = exports.RMBTControlServerCommunication = fu
       })["catch"](function (reason) {
         response = reason;
         _logger.error("error getting testID");
-        if (typeof useLocalServer === 'function') {
-          var config = new RMBTControlServerRegistrationResponse(useLocalServer());
+        _logger.debug("local_server_settings: ".concat(local_server_settings));
+        if (local_server_settings) {
+          var config = new RMBTControlServerRegistrationResponse(local_server_settings);
           onsuccess(config);
         } else {
           onerror();
