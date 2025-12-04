@@ -1339,6 +1339,9 @@ var RMBTControlServerCommunication = exports.RMBTControlServerCommunication = fu
         _logger.debug("local_server_settings: ".concat(local_server_settings));
         var config = new RMBTControlServerRegistrationResponse(local_server_settings);
         onsuccess(config);
+        if (_registrationCallback != null && typeof _registrationCallback === 'function') {
+          _registrationCallback();
+        }
         return;
       }
       var json_data = {
@@ -1415,6 +1418,9 @@ var RMBTControlServerCommunication = exports.RMBTControlServerCommunication = fu
       if (local_server_settings) {
         _logger.debug("local_server_settings: ".concat(local_server_settings));
         onsuccess(true);
+        if (_submissionCallback !== null && typeof _submissionCallback === 'function') {
+          _submissionCallback();
+        }
         return;
       }
       //add additional parameters from the configuration, if any

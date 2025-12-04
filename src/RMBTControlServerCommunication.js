@@ -32,6 +32,9 @@ export const RMBTControlServerCommunication = (rmbtTestConfig, options, testServ
                     local_server_settings
                 );
                 onsuccess(config);
+                if (_registrationCallback != null && typeof _registrationCallback === 'function') {
+                    _registrationCallback();
+                }
                 return
             }
 
@@ -117,6 +120,9 @@ export const RMBTControlServerCommunication = (rmbtTestConfig, options, testServ
             if (local_server_settings) {
                 _logger.debug(`local_server_settings: ${local_server_settings}`);
                 onsuccess(true);
+                if (_submissionCallback !== null && typeof _submissionCallback === 'function') {
+                    _submissionCallback();
+                }
                 return;
             }
             //add additional parameters from the configuration, if any
