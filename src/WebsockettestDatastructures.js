@@ -79,7 +79,7 @@ let RMBTControlServerRegistrationResponse = (function () {
  */
 function RMBTTestThread(cyclicBarrier) {
     let _logger =
-        log && log.getLogger ? log.getLogger("rmbtws") : new MockLogger();
+        log && log.getLogger ? log.getLogger("rmbtws") : console;
     let _callbacks = {};
     let _cyclicBarrier = cyclicBarrier;
 

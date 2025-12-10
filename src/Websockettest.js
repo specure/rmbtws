@@ -27,14 +27,6 @@
  * @returns {}
  */
 
-class MockLogger {
-    debug() {}
-    error() {}
-    info() {}
-    warn() {}
-    log() {}
-}
-
 export function RMBTTest(rmbtTestConfig, rmbtControlServer) {
     let _logger = log && log.getLogger ? log.getLogger("rmbtws") : console;
 

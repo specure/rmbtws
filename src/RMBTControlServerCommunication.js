@@ -9,7 +9,7 @@
  */
 export const RMBTControlServerCommunication = (rmbtTestConfig, options, testServerConfig) => {
     const _rmbtTestConfig = rmbtTestConfig;
-    const  _logger = log && log.getLogger ? log.getLogger("rmbtws") : new MockLogger();
+    const  _logger = log && log.getLogger ? log.getLogger("rmbtws") : console;
 
     options = options || {};
     let _registrationCallback = options.register || null;
