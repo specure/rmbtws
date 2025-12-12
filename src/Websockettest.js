@@ -457,7 +457,6 @@ export function RMBTTest(rmbtTestConfig, rmbtControlServer) {
         try {
             thread.socket = new WebSocket(server);
         } catch(e) {
-            _logger.error("Websocket initialization failed: " + e);
             callErrorCallback(RMBTError.SOCKET_INIT_FAILED);
             return;
         }
